@@ -84,41 +84,61 @@ class Junebug:
         self.distance = sight
 
     def move(self):
-        if self.state == "idle":
-            self.vx = random.uniform(-1, 1)
-            self.vy = random.uniform(-1, 1)
-            self.hunger -= 1
-            self.thirst -= 1
-        elif self.state == "hungry":
-            if self.detect_nearby_objects(bushes, self.sight):
-                self.eat()
-            else:
-                self.x += self.vx
-                self.y += self.vy
-        elif self.state == "thirsty":
-            if self.detect_nearby_objects(lakes, self.sight):
-                
-            else:
-                self.x += self.vx
-                self.y += self.vy
+        if counter == 60:
+            if self.state == "idle":
+                self.vx = random.uniform(-1, 1)
+                self.vy = random.uniform(-1, 1)
+                self.hunger -= 1
+                self.thirst -= 1
+            elif self.state == "hungry":
+                if self.detect_nearby_objects(bushes, self.sight):
+                    self.eat()
+                else:
+                    self.x += self.vx
+                    self.y += self.vy
+            elif self.state == "thirsty":
+                if self.detect_nearby_objects(lakes, self.sight):
+                    self.drink()
+                else:
+                    self.x += self.vx
+                    self.y += self.vy
+            elif self.state == "both":
+                if self.detect_nearby_objects(lakes, self.sight):
+                    self.drink()
+                if self.detect_nearby_objects(bushes, self.sight):
+                    self.eat()
+                if not self.detect_nearby_objects(bushes, self.sight) or not self.detect_nearby_objects(lakes, self.sight):
+                    self.x += self.vx
+                    self.y += self.vy
 
-        if self.x < 0:
-            self.x = 0
-            self.vx = -self.vx
-        if self.x > width:
-            self.x = width
-            self.vx = -self.vx
-        if self.y < 0:
-            self.y = 0
-            self.vy = -self.vy
-        if self.y > height:
-            self.y = height
-            self.vy = -self.vy
+            if self.x < 0:
+                self.x = 0
+                self.vx = -self.vx
+            if self.x > width:
+                self.x = width
+                self.vx = -self.vx
+            if self.y < 0:
+                self.y = 0
+                self.vy = -self.vy
+            if self.y > height:
+                self.y = height
+                self.vy = -self.vy
+            counter = 0
+        counter += 1
     
     def draw(self, screen):
         pg.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.size))
 
     def detect_nearby_objects(self, objects, radius):
+        """Creates a dictionary of nearby objects in the format of {obj: self.distance}.
+
+        Args:
+            Objects (List): The list of objects to check on.
+            Radius (Integer): The sight radius to check for objects in.
+
+        Returns:
+            Dictionary: {obj: self.distance} Gives an object and it's distance from the Junebug.
+        """
         nearby_objects = {}
         for obj in objects:
             if obj is not self:
@@ -128,6 +148,15 @@ class Junebug:
         return nearby_objects
     
     def update_state(self, bushes, lakes):
+        """Updates the state machine.
+
+        Args:
+            Bushes (List): List of the bushes.
+            Lakes (List): List of the lakes.
+
+        Returns:
+            String: The state of the current Junebug.
+        """
         if self.hunger <= 0 or self.thirst <= 0:
             self.state = "dead"
             return self.state
@@ -147,13 +176,25 @@ class Junebug:
             else:
                 self.target = None
             return self.state
+        if self.thirst < self.thirst_thresh and self.hunger < self.hunger_thresh:
+            self.state = "both"
+            nearby_bushes = self.detect_nearby_objects(bushes, self.sight)
+            nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
+            if nearby_bushes
         if self.thirst >= self.thirst_thresh and self.hunger >= self.hunger_thresh:
             self.state = "idle"
             return self.state
 
     def eat(self):
-        if self.x == self.target.x and self.y == self.target.y:
+        self.distance = np.sqrt((self.x - self.target.x)**2 + (self.y - self.target.y)**2)
+        if self.distance <= self.sight:
             self.hunger = self.hunger_max
+            self.target = None
+    
+    def drink(self):
+        self.distance = np.sqrt((self.x - self.target.x)**2 + (self.y - self.target.y)**2)
+        if self.distance <= self.sight:
+            self.thirst = self.thirst_max
             self.target = None
 
 def is_overlapping(x, y, size, entities):
