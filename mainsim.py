@@ -180,7 +180,9 @@ class Junebug:
             self.state = "both"
             nearby_bushes = self.detect_nearby_objects(bushes, self.sight)
             nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
-            if nearby_bushes
+            nearby_objects = {**nearby_bushes, **nearby_lakes}
+            if nearby_objects:
+                self.target = min(nearby_objects, key=nearby_objects.get)
         if self.thirst >= self.thirst_thresh and self.hunger >= self.hunger_thresh:
             self.state = "idle"
             return self.state
