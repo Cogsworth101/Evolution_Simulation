@@ -251,6 +251,7 @@ for _ in range(10):
             break
 
 # Add Bushes
+"""
 for _ in range(3):
     while True:
         x = random.randint(0, width)
@@ -269,7 +270,7 @@ for _ in range(3):
         if not is_overlapping(x, y, size, entities):
             entities.append(Lake(x, y, size))
             break
-
+"""
 running = True
 clock = pg.time.Clock()
 
