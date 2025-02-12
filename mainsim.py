@@ -65,7 +65,35 @@ class Lake:
         pg.draw.ellipse(screen, self.color, rect)
 
 class Junebug:
+    """The Junebug class.
+        Args:
+            x (Integer): x position of the Junebug.
+            y (Integer): y position of the Junebug.
+            color (Tuple): RGB color of the Junebug.
+            size (Integer): Size of the Junebug.
+            hunger (Integer): Current hunger of the Junebug.
+            thirst (Integer): Current thirst of the Junebug.
+            sight (Integer): Sight radius of the Junebug.
+            hunger_max (Integer): Maximum capable hunger of Junebug.
+            thirst_max (Integer): Maximum capable thirst of Junebug.
+            hunger_thresh (Integer): The threshold of hunger to be considered hungry.
+            thirst_thresh (Integer): The threshold of thirst to be considered thirsty.
+        """
     def __init__(self, x, y, color, size, hunger, thirst, sight, hunger_max, thirst_max, hunger_thresh, thirst_thresh):
+        """The Junebug class.
+        Args:
+            x (Integer): x position of the Junebug.
+            y (Integer): y position of the Junebug.
+            color (Tuple): RGB color of the Junebug.
+            size (Integer): Size of the Junebug.
+            hunger (Integer): Current hunger of the Junebug.
+            thirst (Integer): Current thirst of the Junebug.
+            sight (Integer): Sight radius of the Junebug.
+            hunger_max (Integer): Maximum capable hunger of Junebug.
+            thirst_max (Integer): Maximum capable thirst of Junebug.
+            hunger_thresh (Integer): The threshold of hunger to be considered hungry.
+            thirst_thresh (Integer): The threshold of thirst to be considered thirsty.
+        """
         self.x = x
         self.y = y
         self.color = color
@@ -84,47 +112,43 @@ class Junebug:
         self.distance = sight
 
     def move(self):
-        if counter == 60:
-            if self.state == "idle":
-                self.vx = random.uniform(-1, 1)
-                self.vy = random.uniform(-1, 1)
-                self.hunger -= 1
-                self.thirst -= 1
-            elif self.state == "hungry":
-                if self.detect_nearby_objects(bushes, self.sight):
-                    self.eat()
-                else:
-                    self.x += self.vx
-                    self.y += self.vy
-            elif self.state == "thirsty":
-                if self.detect_nearby_objects(lakes, self.sight):
-                    self.drink()
-                else:
-                    self.x += self.vx
-                    self.y += self.vy
-            elif self.state == "both":
-                if self.detect_nearby_objects(lakes, self.sight):
-                    self.drink()
-                if self.detect_nearby_objects(bushes, self.sight):
-                    self.eat()
-                if not self.detect_nearby_objects(bushes, self.sight) or not self.detect_nearby_objects(lakes, self.sight):
-                    self.x += self.vx
-                    self.y += self.vy
-
-            if self.x < 0:
-                self.x = 0
-                self.vx = -self.vx
-            if self.x > width:
-                self.x = width
-                self.vx = -self.vx
-            if self.y < 0:
-                self.y = 0
-                self.vy = -self.vy
-            if self.y > height:
-                self.y = height
-                self.vy = -self.vy
-            counter = 0
-        counter += 1
+        if self.state == "idle":
+            self.vx = random.uniform(-1, 1)
+            self.vy = random.uniform(-1, 1)
+            self.hunger -= 1
+            self.thirst -= 1
+        elif self.state == "hungry":
+            if self.detect_nearby_objects(bushes, self.sight):
+                self.eat()
+            else:
+                self.x += self.vx
+                self.y += self.vy
+        elif self.state == "thirsty":
+            if self.detect_nearby_objects(lakes, self.sight):
+                self.drink()
+            else:
+                self.x += self.vx
+                self.y += self.vy
+        elif self.state == "both":
+            if self.detect_nearby_objects(lakes, self.sight):
+                self.drink()
+            if self.detect_nearby_objects(bushes, self.sight):
+                self.eat()
+            if not self.detect_nearby_objects(bushes, self.sight) or not self.detect_nearby_objects(lakes, self.sight):
+                self.x += self.vx
+                self.y += self.vy
+        if self.x < 0:
+            self.x = 0
+            self.vx = -self.vx
+        if self.x > width:
+            self.x = width
+            self.vx = -self.vx
+        if self.y < 0:
+            self.y = 0
+            self.vy = -self.vy
+        if self.y > height:
+            self.y = height
+            self.vy = -self.vy
     
     def draw(self, screen):
         pg.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.size))
@@ -182,7 +206,11 @@ class Junebug:
             nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
             nearby_objects = {**nearby_bushes, **nearby_lakes}
             if nearby_objects:
-                self.target = min(nearby_objects, key=nearby_objects.get)
+                self.target = min(nearby_objects, key = nearby_objects.get)
+            if self.target in nearby_bushes:
+                self.state = "hungry"
+            elif self.target in nearby_lakes:
+                self.state = "thirsty"
         if self.thirst >= self.thirst_thresh and self.hunger >= self.hunger_thresh:
             self.state = "idle"
             return self.state
@@ -257,7 +285,6 @@ while running:
             if entity.state == "dead":
                 entities.remove(entity)
             else:
-                entity.act()
                 entity.move()
         entity.draw(screen)
 
