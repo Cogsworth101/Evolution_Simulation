@@ -152,6 +152,11 @@ class Junebug:
     
     def draw(self, screen):
         pg.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.size))
+        transparent_color = (100, 100, 100, 128)
+        transparent_surface = pg.Surface((self.sight * 2, self.sight * 2), pg.SRCALPHA)
+        pg.draw.circle(transparent_surface, transparent_color, (self.size, self.size), self.size)
+        screen.blit(transparent_surface, (int(self.x - self.size), int(self.y - self.size)))
+
 
     def detect_nearby_objects(self, objects, radius):
         """Creates a dictionary of nearby objects in the format of {obj: self.distance}.
@@ -188,6 +193,7 @@ class Junebug:
             self.state = "hungry"
             nearby_bushes = self.detect_nearby_objects(bushes, self.sight)
             if nearby_bushes:
+                print(nearby_bushes)
                 self.target = nearby_bushes[0]
             else:
                 self.target = None
@@ -216,14 +222,12 @@ class Junebug:
             return self.state
 
     def eat(self):
-        self.distance = np.sqrt((self.x - self.target.x)**2 + (self.y - self.target.y)**2)
-        if self.distance <= self.sight:
+        if is_overlapping(self.x, self.y, self.size, bushes):
             self.hunger = self.hunger_max
             self.target = None
     
     def drink(self):
-        self.distance = np.sqrt((self.x - self.target.x)**2 + (self.y - self.target.y)**2)
-        if self.distance <= self.sight:
+        if is_overlapping(self.x, self.y, self.size, lakes):
             self.thirst = self.thirst_max
             self.target = None
 
@@ -283,12 +287,13 @@ while running:
         if isinstance(entity, Junebug):
             entity.update_state(bushes, lakes)
             if entity.state == "dead":
+                print("Junebug died with " + entity.thirst + " thirst and " + entity.hunger + " hunger.")
                 entities.remove(entity)
             else:
                 entity.move()
         entity.draw(screen)
 
     pg.display.flip()
-    clock.tick(60)
+    clock.tick(120)
 
 pg.quit()
