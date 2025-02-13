@@ -82,7 +82,7 @@ class Junebug:
             hunger_thresh (Integer): The threshold of hunger to be considered hungry.
             thirst_thresh (Integer): The threshold of thirst to be considered thirsty.
         """
-    def __init__(self, x, y, color, size, hunger, thirst, sight, hunger_max, thirst_max, hunger_thresh, thirst_thresh):
+    def __init__(self, x, y, color, size, hunger, thirst, hunger_max, thirst_max, hunger_thresh, thirst_thresh):
         """The Junebug class.
         Args:
             x (Integer): x position of the Junebug.
@@ -105,22 +105,22 @@ class Junebug:
         self.vy = random.uniform(-1, 1)
         self.hunger = hunger
         self.thirst = thirst
-        self.sight = sight
+        self.sight = 10 + self.size * 2
         self.hunger_max = hunger_max
         self.thirst_max = thirst_max
         self.hunger_thresh = hunger_thresh
         self.thirst_thresh = thirst_thresh
         self.state = "idle"
         self.target = None
-        self.distance = sight
+        self.distance = self.sight
 
     def move(self):
         fps = clock.get_fps()
         if fps == 0:
             fps = 60
         
-        frame_target = int(3 * fps)
-        move_duration = int(random.uniform(1, 2) * fps)
+        frame_target = int(2 * fps)
+        move_duration = int(fps)
 
         if not hasattr(self, "move_timer"):
                 self.move_timer = 0
@@ -146,13 +146,13 @@ class Junebug:
                 self.move_timer = 0
                 self.vx = (self.x - self.target.x) // 2 if self.x > self.target.x else (self.x + self.target.x) // 2
                 self.vy = (self.y - self.target.y) // 2 if self.y > self.target.y else (self.y + self.target.y) // 2
-                self.eat()
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
                 self.vx = random.uniform(-3, 3)
                 self.vy = random.uniform(-3, 3)
 
+            if is_overlapping(self.x, self.y, self.size, self.)
             self.move_timer += 1
         
         elif self.state == "thirsty":
@@ -277,7 +277,10 @@ class Junebug:
             print(str((self.x, self.y)), " Just drank!")
 
 def is_overlapping(x, y, size, entities):
-    """Detects whether 2 entites are overlapping.
+    """
+    Use case (1/2)
+    
+        Detects whether an entity and all entities from a list are overlapping.
 
     Args:
         x (Integer): The x position of the first entity.
@@ -286,13 +289,33 @@ def is_overlapping(x, y, size, entities):
         entities (List): List of entities which could be overlapped with.
 
     Returns:
+        Boolean: Whether or not the entity is overlapping any of the list.
+    
+    Use case (2/2)
+    
+        Detects whether 2 entities are overlapping with one another.
+
+    Args:
+        x (Integer): The x position of the first entity.
+        y (Integer): The y position of the first entity.
+        size (Integer): The size of the first entity
+        entities (Entity): Single entity which could be overlapped with.
+        
+    Returns:
         Boolean: Whether or not the entity is overlapping the other.
     """
-    for entity in entities:
+    if type(entities) is list:
+        for entity in entities:
+            distance = np.sqrt((x - entity.x)**2 + (y - entity.y)**2)
+            if distance < (size + entity.size) / 2:
+                return True
+        return False
+    elif type(entities) is Junebug or type(entities) == Lake or type(entities) == Bush:
         distance = np.sqrt((x - entity.x)**2 + (y - entity.y)**2)
         if distance < (size + entity.size) / 2:
             return True
-    return False
+        return False
+        
 
 entities = []
 
@@ -303,7 +326,7 @@ for _ in range(10):
         y = random.randint(0, height)
         size = random.randint(5, 20)
         if not is_overlapping(x, y, size, entities):
-            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 20, 10, 10, 8, 8))
+            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 10, 10, 8, 8))
             break
 
 # Add Bushes
