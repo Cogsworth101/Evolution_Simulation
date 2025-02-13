@@ -146,6 +146,7 @@ class Junebug:
                 self.move_timer = 0
                 self.vx = (self.x - self.target.x) // 2 if self.x > self.target.x else (self.x + self.target.x) // 2
                 self.vy = (self.y - self.target.y) // 2 if self.y > self.target.y else (self.y + self.target.y) // 2
+                self.eat()
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
@@ -191,7 +192,6 @@ class Junebug:
         transparent_surface = pg.Surface((self.sight * 2, self.sight * 2), pg.SRCALPHA)
         pg.draw.circle(transparent_surface, transparent_color, (self.sight, self.sight), self.sight, width=2)
         screen.blit(transparent_surface, (int(self.x - self.sight), int(self.y - self.sight)))
-
 
     def detect_nearby_objects(self, objects, radius):
         """Creates a dictionary of nearby objects in the format of {obj: self.distance}.
@@ -261,10 +261,14 @@ class Junebug:
             return self.state
 
     def eat(self):
+        """Tries to make Junebug eat, no attributes, just checks if it's overlapping and eats if it is.
+        """
         if is_overlapping(self.x, self.y, self.size, bushes):
             self.hunger = self.hunger_max
             self.target = None
             print(str((self.x, self.y)), " Just ate!")
+        else:
+            print("Failed to eat")
     
     def drink(self):
         if is_overlapping(self.x, self.y, self.size, lakes):
@@ -273,6 +277,17 @@ class Junebug:
             print(str((self.x, self.y)), " Just drank!")
 
 def is_overlapping(x, y, size, entities):
+    """Detects whether 2 entites are overlapping.
+
+    Args:
+        x (Integer): The x position of the first entity.
+        y (Integer): The y position of the first entity.
+        size (Integer): The size of the first entity
+        entities (List): List of entities which could be overlapped with.
+
+    Returns:
+        Boolean: Whether or not the entity is overlapping the other.
+    """
     for entity in entities:
         distance = np.sqrt((x - entity.x)**2 + (y - entity.y)**2)
         if distance < (size + entity.size) / 2:
@@ -288,7 +303,7 @@ for _ in range(10):
         y = random.randint(0, height)
         size = random.randint(5, 20)
         if not is_overlapping(x, y, size, entities):
-            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 20, 10, 10, 5, 5))
+            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 20, 10, 10, 8, 8))
             break
 
 # Add Bushes
