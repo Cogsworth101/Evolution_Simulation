@@ -153,6 +153,23 @@ class Junebug:
                 self.vy = random.uniform(-3, 3)
 
             self.move_timer += 1
+        
+        elif self.state == "thirsty":
+            if self.move_timer < move_duration:
+                self.x += self.vx
+                self.y += self.vy
+
+            elif self.move_timer >= frame_target and self.target != None:
+                self.move_timer = 0
+                self.vx = (self.x - self.target.x) // 2 if self.x > self.target.x else (self.x + self.target.x) // 2
+                self.vy = (self.y - self.target.y) // 2 if self.y > self.target.y else (self.y + self.target.y) // 2
+            
+            elif self.move_timer >= frame_target:
+                self.move_timer = 0
+                self.vx = random.uniform(-3, 3)
+                self.vy = random.uniform(-3, 3)
+
+            self.move_timer += 1
 
         # Boundary checks
         if self.x < 0:
