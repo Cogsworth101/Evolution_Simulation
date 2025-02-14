@@ -120,7 +120,7 @@ class Junebug:
             fps = 60
         
         frame_target = int(2 * fps)
-        move_duration = int(fps)
+        move_duration = int(self.distance) / fps if self.target != None else fps
 
         if not hasattr(self, "move_timer"):
                 self.move_timer = 0
@@ -144,15 +144,18 @@ class Junebug:
 
             elif self.move_timer >= frame_target and self.target != None:
                 self.move_timer = 0
-                self.vx = (self.x - self.target.x) // 2 if self.x > self.target.x else (self.x + self.target.x) // 2
-                self.vy = (self.y - self.target.y) // 2 if self.y > self.target.y else (self.y + self.target.y) // 2
+                self.vx = (self.x - self.target.x) // 1.2 if self.x > self.target.x else (self.x + self.target.x) // 1.2
+                self.vy = (self.y - self.target.y) // 1.2 if self.y > self.target.y else (self.y + self.target.y) // 1.2
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
-                self.vx = random.uniform(-3, 3)
-                self.vy = random.uniform(-3, 3)
+                for i, j in enumerate(self.detect_nearby_objects(bushes, 1000)):
+                    self.vx = self.x - j.x
+                    self.vy = self.y - j.y
+                    break
 
-            if is_overlapping(self.x, self.y, self.size, self.)
+            if is_overlapping(self.x, self.y, self.size, self.target):
+                self.eat()
             self.move_timer += 1
         
         elif self.state == "thirsty":
@@ -162,13 +165,17 @@ class Junebug:
 
             elif self.move_timer >= frame_target and self.target != None:
                 self.move_timer = 0
-                self.vx = (self.x - self.target.x) // 2 if self.x > self.target.x else (self.x + self.target.x) // 2
-                self.vy = (self.y - self.target.y) // 2 if self.y > self.target.y else (self.y + self.target.y) // 2
+                self.vx = (self.x - self.target.x) // 1.2 if self.x > self.target.x else (self.x + self.target.x) // 1.2
+                self.vy = (self.y - self.target.y) // 1.2 if self.y > self.target.y else (self.y + self.target.y) // 1.2
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
                 self.vx = random.uniform(-3, 3)
                 self.vy = random.uniform(-3, 3)
+
+            if is_overlapping(self.x, self.y, self.size, self.target):
+                self.drink()
+            self.move_timer += 1
 
             self.move_timer += 1
 
@@ -250,7 +257,12 @@ class Junebug:
             nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
             nearby_objects = {**nearby_bushes, **nearby_lakes}
             if nearby_objects:
-                self.target = min(nearby_objects, key = nearby_objects.get)
+                if self.hunger > self.thirst:
+                    self.state = "thirsty"
+                    self.target = min(nearby_lakes, key = nearby_lakes.get)
+                else:
+                    self.state = "hungry"
+                    self.target = min(nearby_bushes, key = nearby_bushes.get)
             if self.target in nearby_bushes:
                 self.state = "hungry"
             elif self.target in nearby_lakes:
@@ -271,10 +283,14 @@ class Junebug:
             print("Failed to eat")
     
     def drink(self):
+        """Tries to make Junebug drink, no attributes, just checks if it's overlapping and drinks if it is.
+        """
         if is_overlapping(self.x, self.y, self.size, lakes):
             self.thirst = self.thirst_max
             self.target = None
             print(str((self.x, self.y)), " Just drank!")
+        else:
+            print("Failed to drink")
 
 def is_overlapping(x, y, size, entities):
     """
@@ -311,8 +327,8 @@ def is_overlapping(x, y, size, entities):
                 return True
         return False
     elif type(entities) is Junebug or type(entities) == Lake or type(entities) == Bush:
-        distance = np.sqrt((x - entity.x)**2 + (y - entity.y)**2)
-        if distance < (size + entity.size) / 2:
+        distance = np.sqrt((x - entities.x)**2 + (y - entities.y)**2)
+        if distance < (size + entities.size) / 2:
             return True
         return False
         
@@ -320,7 +336,7 @@ def is_overlapping(x, y, size, entities):
 entities = []
 
 # Add Junebugs
-for _ in range(10):
+for _ in range(1):
     while True:
         x = random.randint(0, width)
         y = random.randint(0, height)
@@ -377,7 +393,7 @@ while running:
                     i = 0
                     entity.hunger -= 1
                     entity.thirst -= 1
-                    print(entity.state)
+                    print(entity.state, entity.hunger, entity.thirst)
                 else:
                     i += 1
         entity.draw(screen)
