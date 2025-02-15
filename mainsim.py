@@ -4,8 +4,9 @@ import random
 import time
 import matplotlib.pyplot as plt
 from math import log2
+from operator import add
 
-game_speed = 120 # in fps
+game_speed = 999999 # in fps
 
 # make a basic pygame window and runtime
 pg.init()
@@ -105,13 +106,15 @@ class Junebug:
         self.vy = random.uniform(-1, 1)
         self.hunger = hunger
         self.thirst = thirst
-        self.sight = 10 + self.size * 2
+        self.sight = 50 + self.size * 2
         self.hunger_max = hunger_max
         self.thirst_max = thirst_max
         self.hunger_thresh = hunger_thresh
         self.thirst_thresh = thirst_thresh
         self.state = "idle"
         self.target = None
+        self.target2 = None
+        self.partner = None
         self.distance = self.sight
 
     def move(self):
@@ -119,8 +122,8 @@ class Junebug:
         if fps == 0:
             fps = 60
         
-        frame_target = int(2 * fps)
-        move_duration = int(self.distance) / fps if self.target != None else fps
+        frame_target = 120
+        move_duration = 60
 
         if not hasattr(self, "move_timer"):
                 self.move_timer = 0
@@ -132,8 +135,15 @@ class Junebug:
 
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
-                self.vx = random.uniform(-3, 3)
-                self.vy = random.uniform(-3, 3)
+                for i, j in enumerate(self.detect_nearby_objects(junebugs, self.sight * 5)):
+                    dx = j.x - self.x
+                    dy = j.y - self.y
+                    dist = (dx**2 + dy**2) ** 0.5 or 1
+                    speed = 2
+                    self.vx = (dx / dist) * speed
+                    self.vy = (dy / dist) * speed
+                    break
+                self.mate(self.partner)
 
             self.move_timer += 1
 
@@ -141,41 +151,64 @@ class Junebug:
             if self.move_timer < move_duration:
                 self.x += self.vx
                 self.y += self.vy
-
-            elif self.move_timer >= frame_target and self.target != None:
-                self.move_timer = 0
-                self.vx = (self.x - self.target.x) // 1.2 if self.x > self.target.x else (self.x + self.target.x) // 1.2
-                self.vy = (self.y - self.target.y) // 1.2 if self.y > self.target.y else (self.y + self.target.y) // 1.2
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
-                for i, j in enumerate(self.detect_nearby_objects(bushes, 1000)):
-                    self.vx = self.x - j.x
-                    self.vy = self.y - j.y
+                for i, j in enumerate(self.detect_nearby_objects(bushes, self.sight * 5)):
+                    dx = j.x - self.x
+                    dy = j.y - self.y
+                    dist = (dx**2 + dy**2) ** 0.5 or 1
+                    speed = 2
+                    self.vx = (dx / dist) * speed
+                    self.vy = (dy / dist) * speed
                     break
-
-            if is_overlapping(self.x, self.y, self.size, self.target):
+            
+            if is_overlapping(self.x, self.y, self.sight, self.target):
                 self.eat()
+
             self.move_timer += 1
         
         elif self.state == "thirsty":
             if self.move_timer < move_duration:
                 self.x += self.vx
                 self.y += self.vy
-
-            elif self.move_timer >= frame_target and self.target != None:
-                self.move_timer = 0
-                self.vx = (self.x - self.target.x) // 1.2 if self.x > self.target.x else (self.x + self.target.x) // 1.2
-                self.vy = (self.y - self.target.y) // 1.2 if self.y > self.target.y else (self.y + self.target.y) // 1.2
             
             elif self.move_timer >= frame_target:
                 self.move_timer = 0
-                self.vx = random.uniform(-3, 3)
-                self.vy = random.uniform(-3, 3)
+                for i, j in enumerate(self.detect_nearby_objects(lakes, self.sight * 5)):
+                    dx = j.x - self.x
+                    dy = j.y - self.y
+                    dist = (dx**2 + dy**2) ** 0.5 or 1
+                    speed = 2
+                    self.vx = (dx / dist) * speed
+                    self.vy = (dy / dist) * speed
+                    break
+            
+            if is_overlapping(self.x, self.y, self.sight, self.target2):
+               self.drink()
 
-            if is_overlapping(self.x, self.y, self.size, self.target):
-                self.drink()
             self.move_timer += 1
+
+        elif self.state == "both":
+            if self.move_timer < move_duration:
+                self.x += self.vx
+                self.y += self.vy
+
+            elif self.move_timer >= frame_target:
+                self.move_timer = 0
+                for i, j in enumerate(self.detect_nearby_objects(lakes + bushes, self.sight * 5)):
+                    dx = j.x - self.x
+                    dy = j.y - self.y
+                    dist = (dx**2 + dy**2) ** 0.5 or 1
+                    speed = 2
+                    self.vx = (dx / dist) * speed
+                    self.vy = (dy / dist) * speed
+                    break
+            
+            if is_overlapping(self.x, self.y, self.sight, self.target):
+                self.eat()
+            if is_overlapping(self.x, self.y, self.sight, self.target2):
+                self.drink()
 
             self.move_timer += 1
 
@@ -192,6 +225,23 @@ class Junebug:
         if self.y > height:
             self.y = height
             self.vy = -self.vy
+    
+    def mate(self, partner):
+        """Mates one Junebug with another.
+
+        Args:
+            partner (Junebug): The Junebug to mate with.
+        """
+        if self.state == "idle" and partner.state == "idle":
+            if is_overlapping(self.x, self.y, self.sight, partner):
+                combo = list(map(add, self.color, partner.color))
+                child_color = list(map(lambda x: x * (1/2), combo))
+                child_size = (self.size + partner.size) / 2
+                for i in range(random.uniform(1, 3)):
+                    entities.append(Junebug(self.x, self.y, child_color, child_size, 10, 10, 10, 10, 5, 5))
+                self.partner = None
+                partner.partner = None
+                print("Mated")
     
     def draw(self, screen):
         pg.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.size))
@@ -228,12 +278,38 @@ class Junebug:
         Returns:
             String: The state of the current Junebug.
         """
+
         if self.hunger <= 0 or self.thirst <= 0:
             self.state = "dead"
             return self.state
-        if self.hunger < self.hunger_thresh:
+        elif self.thirst < self.thirst_thresh and self.hunger < self.hunger_thresh:
+            self.state = "both"
+            nearby_bushes = self.detect_nearby_objects(bushes, self.sight * 5)
+            nearby_lakes = self.detect_nearby_objects(lakes, self.sight * 5)
+            nearby_objects = {**nearby_bushes, **nearby_lakes}
+            if nearby_objects:
+                if nearby_bushes and nearby_lakes:
+                    self.state = "both"
+                    for i, j in enumerate(nearby_bushes):
+                        self.target = j
+                        break
+                    for i, j in enumerate(nearby_lakes):
+                        self.target2 = j
+                        break
+                elif nearby_bushes:
+                    self.state = "hungry"
+                    for i, j in enumerate(nearby_bushes):
+                        self.target = j
+                        break
+                elif nearby_lakes:
+                    self.state = "thirsty"
+                    for i, j in enumerate(nearby_lakes):
+                        self.target2 = j
+                        break
+            return self.state
+        elif self.hunger < self.hunger_thresh:
             self.state = "hungry"
-            nearby_bushes = self.detect_nearby_objects(bushes, self.sight)
+            nearby_bushes = self.detect_nearby_objects(bushes, self.sight * 5)
             if nearby_bushes:
                 for i, j in enumerate(nearby_bushes):
                     self.target = j
@@ -241,56 +317,40 @@ class Junebug:
             else:
                 self.target = None
             return self.state
-        if self.thirst < self.thirst_thresh:
+        elif self.thirst < self.thirst_thresh:
             self.state = "thirsty"
-            nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
+            nearby_lakes = self.detect_nearby_objects(lakes, self.sight * 5)
             if nearby_lakes:
                 for i, j in enumerate(nearby_lakes):
-                    self.target = j
+                    self.target2 = j
                     break
             else:
-                self.target = None
+                self.target2 = None
             return self.state
-        if self.thirst < self.thirst_thresh and self.hunger < self.hunger_thresh:
-            self.state = "both"
-            nearby_bushes = self.detect_nearby_objects(bushes, self.sight)
-            nearby_lakes = self.detect_nearby_objects(lakes, self.sight)
-            nearby_objects = {**nearby_bushes, **nearby_lakes}
-            if nearby_objects:
-                if self.hunger > self.thirst:
-                    self.state = "thirsty"
-                    self.target = min(nearby_lakes, key = nearby_lakes.get)
-                else:
-                    self.state = "hungry"
-                    self.target = min(nearby_bushes, key = nearby_bushes.get)
-            if self.target in nearby_bushes:
-                self.state = "hungry"
-            elif self.target in nearby_lakes:
-                self.state = "thirsty"
-            return self.state
-        if self.thirst >= self.thirst_thresh and self.hunger >= self.hunger_thresh:
+        elif self.thirst >= self.thirst_thresh and self.hunger >= self.hunger_thresh:
             self.state = "idle"
+            nearby_mates = self.detect_nearby_objects(junebugs, self.sight * 5)
+            if nearby_mates:
+                for i, j in enumerate(nearby_mates):
+                    self.partner = j
+                    break
+            else:
+                self.partner = None
             return self.state
 
     def eat(self):
         """Tries to make Junebug eat, no attributes, just checks if it's overlapping and eats if it is.
         """
-        if is_overlapping(self.x, self.y, self.size, bushes):
+        if is_overlapping(self.x, self.y, self.sight, self.target):
             self.hunger = self.hunger_max
             self.target = None
-            print(str((self.x, self.y)), " Just ate!")
-        else:
-            print("Failed to eat")
     
     def drink(self):
         """Tries to make Junebug drink, no attributes, just checks if it's overlapping and drinks if it is.
         """
-        if is_overlapping(self.x, self.y, self.size, lakes):
+        if is_overlapping(self.x, self.y, self.sight, self.target2):
             self.thirst = self.thirst_max
-            self.target = None
-            print(str((self.x, self.y)), " Just drank!")
-        else:
-            print("Failed to drink")
+            self.target2 = None
 
 def is_overlapping(x, y, size, entities):
     """
@@ -336,13 +396,13 @@ def is_overlapping(x, y, size, entities):
 entities = []
 
 # Add Junebugs
-for _ in range(1):
+for _ in range(5):
     while True:
         x = random.randint(0, width)
         y = random.randint(0, height)
         size = random.randint(5, 20)
         if not is_overlapping(x, y, size, entities):
-            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 10, 10, 8, 8))
+            entities.append(Junebug(x, y, random.choice(list(colors.keys())), size, 10, 10, 10, 10, 5, 5))
             break
 
 # Add Bushes
@@ -350,7 +410,7 @@ for _ in range(3):
     while True:
         x = random.randint(0, width)
         y = random.randint(0, height)
-        size = 50
+        size = 100
         if not is_overlapping(x, y, size, entities):
             entities.append(Bush(x, y, size, 3))
             break
@@ -358,7 +418,7 @@ for _ in range(3):
 # Add Lakes
 for _ in range(3):
     while True:
-        size = random.randint(50, 100)
+        size = random.randint(150, 250)
         x = random.randint(size // 2, width - size // 2)
         y = random.randint(size // 2, height - size // 2)
         if not is_overlapping(x, y, size, entities):
@@ -376,24 +436,25 @@ while running:
         if event.type == pg.QUIT:
             running = False
 
-    screen.fill((255, 255, 255))
+    screen.fill((200, 255, 200))
 
     bushes = [entity for entity in entities if isinstance(entity, Bush)]
     lakes = [entity for entity in entities if isinstance(entity, Lake)]
+    junebugs = [entity for entity in entities if isinstance(entity, Junebug)]
 
     for entity in entities[:]:
         if isinstance(entity, Junebug):
             entity.update_state(bushes, lakes)
             if entity.state == "dead":
-                print("Junebug died with " + str(entity.thirst) + " thirst and " + str(entity.hunger) + " hunger.")
+                # print("Junebug died with " + str(entity.thirst) + " thirst and " + str(entity.hunger) + " hunger.")
                 entities.remove(entity)
             else:
                 entity.move()
-                if i == 3 * fps:
+                if i == 120:
                     i = 0
                     entity.hunger -= 1
                     entity.thirst -= 1
-                    print(entity.state, entity.hunger, entity.thirst)
+                    # print(entity.state, entity.hunger, entity.thirst)
                 else:
                     i += 1
         entity.draw(screen)

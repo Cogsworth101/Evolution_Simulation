@@ -1,14 +1,19 @@
-class guy:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+from operator import add
+from matplotlib import pyplot as plt
+a = (255, 180, 60)
+b = (0, 150, 255)
 
-sup = guy(5, 5)
+# vector addition
+c = list(map(add, a, b))
+print(c)
 
-randomdict = {sup: "hi", 
-              5: "ho", 
-              2: "sup"
-}
-for i, j in enumerate(randomdict):
-    print(j)
-    break
+# scalar multiplication
+d = list(map(lambda x: x * (1/2), c))
+print(d)
+
+plt.figure()
+colors = [a, b, d]
+for i, color in enumerate(colors):
+    plt.bar(i, 1, color=[x/255 for x in color])
+plt.axis('off')
+plt.show()
