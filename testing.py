@@ -1,19 +1,34 @@
-from operator import add
-from matplotlib import pyplot as plt
-a = (255, 180, 60)
-b = (0, 150, 255)
+import random
+class Bush:
+    def __init__(self, x, y, size, aphid_count):
+        self.x = x
+        self.y = y
+        self.color = (0, 200, 0)
+        self.size = size
+        self.aphids = []
+        self.aphid_count = len(self.aphids)
 
-# vector addition
-c = list(map(add, a, b))
-print(c)
+    def regrow(self):
+        self.aphids.append(Aphid(random.uniform(0, self.size), random.uniform(0, self.size), self, 10, False))
 
-# scalar multiplication
-d = list(map(lambda x: x * (1/2), c))
-print(d)
+class Aphid:
+    def __init__(self, x, y, parent, life, drawn):
+        self.x = x
+        self.y = y
+        self.parent = parent
+        self.life = life
+        self.drawn = drawn
+    
+    def draw(self):
+        self.drawn == True
+    
+    def delete(self):
+        for aphid in self.parent.aphids:
+            if (aphid.x == self.x) and (aphid.y == self.y):
+                self.parent.aphids.remove(aphid)
+            print(self.parent.aphids)
 
-plt.figure()
-colors = [a, b, d]
-for i, color in enumerate(colors):
-    plt.bar(i, 1, color=[x/255 for x in color])
-plt.axis('off')
-plt.show()
+bush = Bush(5, 5, 5, 5)
+bush.regrow()
+bush.regrow()
+bush.regrow()

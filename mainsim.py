@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from math import log2
 from operator import add
 
-game_speed = 999999 # in fps
+game_speed = 120 # in fps
 
 # make a basic pygame window and runtime
 pg.init()
@@ -34,6 +34,10 @@ class Bush:
         self.size = size
         self.aphids = []
         self.aphid_count = len(self.aphids)
+        self.max_aphid_count = 3
+        for i in range(self.max_aphid_count):
+            self.regrow()
+            print(self.aphids[i].x)
 
     def regrow(self):
         self.aphids.append(Aphid(random.uniform(0, self.size), random.uniform(0, self.size), self, 10, False))
@@ -56,6 +60,11 @@ class Aphid:
     def draw(self):
         pg.draw.circle(screen, (255, 0, 0), (int(self.parent.x + random.uniform(0, self.parent.size)), int(self.parent.y) + random.uniform(0, self.parent.size)), 2)
         self.drawn = True
+    
+    def delete(self):
+        for aphid in self.parent.aphids:
+            if (aphid.x == self.x) and (aphid.y == self.y):
+                self.parent.aphids.remove()
 
 class Lake:
     def __init__(self, x, y, size):
@@ -116,6 +125,8 @@ class Junebug:
         self.target2 = None
         self.partner = None
         self.distance = self.sight
+        self.life_max = 50 # How many times it's eaten/drank
+        self.life = self.life_max
 
     def move(self):
         fps = clock.get_fps()
@@ -237,7 +248,7 @@ class Junebug:
                 combo = list(map(add, self.color, partner.color))
                 child_color = list(map(lambda x: x * (1/2), combo))
                 child_size = (self.size + partner.size) / 2
-                for i in range(random.uniform(1, 3)):
+                for i in range(random.randint(1, 3)):
                     entities.append(Junebug(self.x, self.y, child_color, child_size, 10, 10, 10, 10, 5, 5))
                 self.partner = None
                 partner.partner = None
@@ -279,7 +290,7 @@ class Junebug:
             String: The state of the current Junebug.
         """
 
-        if self.hunger <= 0 or self.thirst <= 0:
+        if (self.hunger <= 0 or self.thirst <= 0) or (self.life <= 0):
             self.state = "dead"
             return self.state
         elif self.thirst < self.thirst_thresh and self.hunger < self.hunger_thresh:
@@ -342,8 +353,12 @@ class Junebug:
         """Tries to make Junebug eat, no attributes, just checks if it's overlapping and eats if it is.
         """
         if is_overlapping(self.x, self.y, self.sight, self.target):
-            self.hunger = self.hunger_max
-            self.target = None
+            if self.target.aphids != []:
+                self.hunger = self.hunger_max
+                self.target = None
+                self.life -= 1
+                self.target.aphids[0].delete()
+                print(self.target.aphids)
     
     def drink(self):
         """Tries to make Junebug drink, no attributes, just checks if it's overlapping and drinks if it is.
@@ -351,6 +366,7 @@ class Junebug:
         if is_overlapping(self.x, self.y, self.sight, self.target2):
             self.thirst = self.thirst_max
             self.target2 = None
+            self.life -= 1
 
 def is_overlapping(x, y, size, entities):
     """
@@ -455,8 +471,12 @@ while running:
                     entity.hunger -= 1
                     entity.thirst -= 1
                     # print(entity.state, entity.hunger, entity.thirst)
+                if j == 240:
+                    j = 0
+                    entity.hunger
                 else:
                     i += 1
+                    j += 0
         entity.draw(screen)
 
     pg.display.flip()
