@@ -445,6 +445,7 @@ running = True
 clock = pg.time.Clock()
 
 i = 0 # Counter for hunger and thirst
+j = 0
 fps = clock.get_fps() if clock.get_fps() > 0 else game_speed
 
 while running:
@@ -473,7 +474,7 @@ while running:
                     # print(entity.state, entity.hunger, entity.thirst)
                 if j == 240:
                     j = 0
-                    entity.hunger
+                    entity.
                 else:
                     i += 1
                     j += 0
